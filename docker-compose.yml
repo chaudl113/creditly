@@ -1,0 +1,60 @@
+# Full local stack: app + Postgres + stripe-mock + Mailpit.
+#   docker compose up --build        -> http://localhost:3101
+# For development run only the services and `npm run dev`:
+#   docker compose up -d db stripe-mock mailpit
+name: creditly
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: creditly
+      POSTGRES_PASSWORD: creditly
+      POSTGRES_DB: creditly
+    ports:
+      - "5441:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creditly"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    ports:
+      - "12141:12111"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1041:1025" # SMTP
+      - "8041:8025" # Web UI -> http://localhost:8041
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      stripe-mock:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    ports:
+      - "3101:3101"
+    environment:
+      DATABASE_URL: postgres://creditly:creditly@db:5432/creditly
+      APP_URL: http://localhost:3101
+      AUTH_SECRET: ${AUTH_SECRET:-docker-demo-secret-change-me-0123456789abcdef}
+      AUTH_TRUST_HOST: "true"
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_123}
+      STRIPE_API_BASE: ${STRIPE_API_BASE:-http://stripe-mock:12111}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_local_demo_secret}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin-demo-1234}
+
+volumes:
+  pgdata:

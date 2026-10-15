@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
+// Cache Components is off on purpose: every screen in this app shows
+// per-user money/credit data that must be read fresh on each request.
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  output: "standalone",
+  cacheComponents: false,
+  serverExternalPackages: ["postgres"],
   turbopack: {
     rules: {
       "*.css": {
