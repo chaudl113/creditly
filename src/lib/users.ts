@@ -1,8 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
-import type { Db } from "@/db";
+import type { Db, DbOrTx } from "@/db";
 import { passwordResetTokens, users, type User } from "@/db/schema";
+import { grantSignupCredits } from "./credits";
 import { AppError } from "./errors";
+import { ensureUserAccount } from "./ledger";
 import { hashPassword } from "./auth/password";
 import { sendMail } from "./mail";
 
@@ -17,7 +19,7 @@ export async function findUserById(db: Db, id: string): Promise<User | undefined
 }
 
 export async function createUser(
-  db: Db,
+  db: DbOrTx,
   input: { email: string; name: string; password?: string; role?: User["role"] },
 ): Promise<User> {
   const email = normalizeEmail(input.email);
@@ -29,6 +31,9 @@ export async function createUser(
       .onConflictDoNothing({ target: users.email })
       .returning();
     if (!user) throw new AppError("EMAIL_TAKEN", "An account with this email already exists.");
+    // Wallet + welcome credits are created in the same transaction as the user.
+    await ensureUserAccount(tx, user.id);
+    await grantSignupCredits(tx, user.id);
     return user;
   });
 }

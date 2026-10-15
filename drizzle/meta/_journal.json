@@ -8,6 +8,20 @@
       "when": 1792032977129,
       "tag": "0000_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792033091373,
+      "tag": "0001_ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792033092015,
+      "tag": "0002_ledger_guards",
+      "breakpoints": true
     }
   ]
 }
