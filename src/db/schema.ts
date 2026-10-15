@@ -203,7 +203,40 @@ export const stripeEvents = pgTable(
   (t) => [index("stripe_events_received_idx").on(t.receivedAt)],
 );
 
+// ---------------------------------------------------------------------------
+// AI jobs. Each job reserves credits up front (usage_hold), then is closed
+// exactly once: settled at the real token cost, or released in full on error.
+// ---------------------------------------------------------------------------
+
+export const aiJobStatusEnum = pgEnum("ai_job_status", ["running", "succeeded", "failed"]);
+
+export const aiJobs = pgTable(
+  "ai_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    status: aiJobStatusEnum("status").notNull().default("running"),
+    source: text("source", { enum: ["text", "url"] }).notNull(),
+    sourceUrl: text("source_url"),
+    inputChars: integer("input_chars").notNull(),
+    provider: text("provider", { enum: ["anthropic", "demo"] }).notNull(),
+    model: text("model"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    creditsReserved: integer("credits_reserved").notNull(),
+    creditsCharged: integer("credits_charged"),
+    result: jsonb("result"),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [index("ai_jobs_user_created_idx").on(t.userId, t.createdAt), index("ai_jobs_status_idx").on(t.status)],
+);
+
 export type User = typeof users.$inferSelect;
+export type AiJob = typeof aiJobs.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type LedgerTxType = (typeof ledgerTxTypeEnum.enumValues)[number];
