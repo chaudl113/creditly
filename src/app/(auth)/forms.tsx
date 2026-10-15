@@ -66,6 +66,9 @@ function Submit({ pending, label, pendingLabel }: { pending: boolean; label: str
   );
 }
 
+// Outside a FieldGroup the separator needs its own spacing and the card's background.
+const separatorClass = "my-1 *:data-[slot=field-separator-content]:bg-card";
+
 const linkClass = "font-medium text-primary underline-offset-4 hover:underline";
 
 export function LoginForm({ next, notice, demo, googleEnabled, googleAction }: {
@@ -89,7 +92,7 @@ export function LoginForm({ next, notice, demo, googleEnabled, googleAction }: {
           <p className="text-center text-xs text-muted-foreground">
             Shared demo accounts, no password needed. Data resets every night.
           </p>
-          <FieldSeparator>or log in with your own account</FieldSeparator>
+          <FieldSeparator className={separatorClass}>or log in with your own account</FieldSeparator>
         </>
       )}
       <Status state={state} />
@@ -111,7 +114,7 @@ export function LoginForm({ next, notice, demo, googleEnabled, googleAction }: {
       </form>
       {googleEnabled && (
         <>
-          <FieldSeparator>or</FieldSeparator>
+          <FieldSeparator className={separatorClass}>or</FieldSeparator>
           <form action={googleAction}>
             <Button type="submit" variant="outline" size="lg" className="w-full">Continue with Google</Button>
           </form>

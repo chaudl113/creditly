@@ -68,8 +68,8 @@ export function AppSidebar({
   const pathname = usePathname();
   const root = area === "app" ? "/app" : "/admin";
   const isActive = (href: string) => (href === root ? pathname === href : pathname.startsWith(href));
-  const initials = user.name
-    .split(/\s+/)
+  // Words only, so "Admin (demo)" gives "AD", not "A(".
+  const initials = (user.name.match(/[\p{L}\p{N}]+/gu) ?? [])
     .map((p) => p[0])
     .join("")
     .slice(0, 2)
