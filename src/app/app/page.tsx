@@ -1,5 +1,9 @@
-import { ButtonLink, Card } from "@/components/ui";
+import { CreditCardIcon, SparklesIcon } from "lucide-react";
+import Link from "next/link";
+import { StatCard } from "@/components/stat-card";
 import { Statement } from "@/components/statement";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth/session";
 import { getUserBalance, userStatement } from "@/lib/ledger";
@@ -13,30 +17,42 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Welcome, {user.name}</h1>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="sm:col-span-1">
-          <p className="text-sm text-slate-500">Credit balance</p>
-          <p className="mt-1 text-4xl font-bold tracking-tight" data-testid="credit-balance">
-            {balance.toLocaleString("en-US")}
-          </p>
-          <p className="mt-2 text-xs text-slate-500">1 credit ≈ 1,000 AI tokens</p>
-        </Card>
-        <Card className="flex flex-col justify-between gap-4 sm:col-span-2">
-          <div>
-            <h2 className="font-semibold">Summarize & extract</h2>
-            <p className="mt-1 text-sm text-slate-600">
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Credit balance"
+          value={balance.toLocaleString("en-US")}
+          testId="credit-balance"
+          footer="A typical summary costs 3–8 credits."
+        />
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Summarize & extract</CardTitle>
+            <CardDescription>
               Paste an article, report or URL and get a summary plus a table of the key facts.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <ButtonLink href="/app/summarize">New summary</ButtonLink>
-            <ButtonLink href="/app/billing" variant="secondary">Buy credits</ButtonLink>
-          </div>
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="mt-auto flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/app/summarize">
+                <SparklesIcon /> New summary
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/app/billing">
+                <CreditCardIcon /> Buy credits
+              </Link>
+            </Button>
+          </CardFooter>
         </Card>
       </div>
       <Card>
-        <h2 className="mb-4 font-semibold">Credit activity</h2>
-        <Statement rows={statement} />
+        <CardHeader>
+          <CardTitle>Credit activity</CardTitle>
+          <CardDescription>Every change to your balance is a ledger entry; the balance is their sum.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Statement rows={statement} />
+        </CardContent>
       </Card>
     </div>
   );

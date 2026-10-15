@@ -1,76 +1,98 @@
+import { CheckIcon } from "lucide-react";
+import Link from "next/link";
 import { startCheckoutAction } from "@/app/app/billing/actions";
-import { PACKS, PLANS, formatUsd } from "@/lib/billing/catalog";
-import { Badge, Button, ButtonLink, Card } from "./ui";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { PACKS, PLANS, SIGNUP_CREDITS, formatUsd } from "@/lib/billing/catalog";
+import { cn } from "@/lib/utils";
+
+function Features({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-2 text-sm">
+      {items.map((item) => (
+        <li key={item} className="flex gap-2">
+          <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function PricingCards({ signedIn, currentPlan }: { signedIn: boolean; currentPlan?: "free" | "pro" }) {
-  const cta = (product: string, label: string, variant: "primary" | "secondary" = "primary") =>
+  const cta = (product: string, label: string, variant: "default" | "outline" = "default") =>
     signedIn ? (
-      <form action={startCheckoutAction}>
+      <form action={startCheckoutAction} className="w-full">
         <input type="hidden" name="product" value={product} />
-        <Button type="submit" variant={variant} className="w-full" data-testid={`buy-${product}`}>
+        <Button type="submit" size="lg" variant={variant} className="w-full" data-testid={`buy-${product}`}>
           {label}
         </Button>
       </form>
     ) : (
-      <ButtonLink href="/signup" variant={variant} className="w-full">
-        {label}
-      </ButtonLink>
+      <Button asChild size="lg" variant={variant} className="w-full">
+        <Link href="/signup">{label}</Link>
+      </Button>
     );
+  const current = <p className="w-full text-center text-sm font-medium text-muted-foreground">Your current plan</p>;
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Card className="flex flex-col gap-4">
-        <div>
-          <h3 className="font-semibold">{PLANS.free.name}</h3>
-          <p className="mt-2 text-3xl font-bold">$0</p>
-        </div>
-        <ul className="flex-1 space-y-1.5 text-sm text-slate-600">
-          <li>✓ 50 welcome credits</li>
-          <li>✓ Summaries up to 20,000 characters</li>
-          <li>✓ Failed runs refunded</li>
-        </ul>
-        {currentPlan ? (
-          <p className="text-center text-sm text-slate-500">{currentPlan === "free" ? "Your current plan" : "Included"}</p>
-        ) : (
-          <ButtonLink href="/signup" variant="secondary" className="w-full">Start free</ButtonLink>
-        )}
+      <Card>
+        <CardHeader>
+          <CardTitle>{PLANS.free.name}</CardTitle>
+          <CardDescription>Try it out, no card required.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 space-y-4">
+          <p className="text-3xl font-semibold">$0</p>
+          <Features items={[`${SIGNUP_CREDITS} welcome credits`, "Summaries up to 20,000 characters", "Failed runs refunded automatically"]} />
+        </CardContent>
+        <CardFooter>
+          {currentPlan ? (
+            currentPlan === "free" ? current : <p className="w-full text-center text-sm text-muted-foreground">Included in Pro</p>
+          ) : (
+            <Button asChild size="lg" variant="outline" className="w-full">
+              <Link href="/signup">Start free</Link>
+            </Button>
+          )}
+        </CardFooter>
       </Card>
-      <Card className="flex flex-col gap-4 ring-2 ring-brand-500">
-        <div>
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">{PLANS.pro.name}</h3>
-            <Badge tone="brand">Most popular</Badge>
-          </div>
-          <p className="mt-2 text-3xl font-bold">
+      <Card className={cn("ring-2 ring-primary")}>
+        <CardHeader>
+          <CardTitle>{PLANS.pro.name}</CardTitle>
+          <CardDescription>For regular use.</CardDescription>
+          <CardAction>
+            <Badge>Most popular</Badge>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="flex-1 space-y-4">
+          <p className="text-3xl font-semibold">
             {formatUsd(PLANS.pro.priceCents)}
-            <span className="text-base font-medium text-slate-500">/month</span>
+            <span className="text-base font-normal text-muted-foreground">/month</span>
           </p>
-        </div>
-        <ul className="flex-1 space-y-1.5 text-sm text-slate-600">
-          <li>✓ {PLANS.pro.monthlyCredits.toLocaleString("en-US")} credits every month</li>
-          <li>✓ Unused credits roll over</li>
-          <li>✓ Cancel any time in the billing portal</li>
-        </ul>
-        {currentPlan === "pro" ? (
-          <p className="text-center text-sm font-medium text-brand-700">Your current plan</p>
-        ) : (
-          cta("pro", "Upgrade to Pro")
-        )}
+          <Features
+            items={[
+              `${PLANS.pro.monthlyCredits.toLocaleString("en-US")} credits every month`,
+              "Unused credits roll over",
+              "Cancel any time in the billing portal",
+            ]}
+          />
+        </CardContent>
+        <CardFooter>{currentPlan === "pro" ? current : cta("pro", "Upgrade to Pro")}</CardFooter>
       </Card>
-      <Card className="flex flex-col gap-4">
-        <div>
-          <h3 className="font-semibold">Top-up</h3>
-          <p className="mt-2 text-3xl font-bold">
+      <Card>
+        <CardHeader>
+          <CardTitle>Top-up</CardTitle>
+          <CardDescription>One-time credit pack.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 space-y-4">
+          <p className="text-3xl font-semibold">
             {formatUsd(PACKS.pack_500.priceCents)}
-            <span className="text-base font-medium text-slate-500"> once</span>
+            <span className="text-base font-normal text-muted-foreground"> once</span>
           </p>
-        </div>
-        <ul className="flex-1 space-y-1.5 text-sm text-slate-600">
-          <li>✓ {PACKS.pack_500.credits} credits, never expire</li>
-          <li>✓ Works on any plan</li>
-          <li>✓ One-time payment</li>
-        </ul>
-        {cta("pack_500", `Buy ${PACKS.pack_500.credits} credits`, "secondary")}
+          <Features items={[`${PACKS.pack_500.credits} credits that never expire`, "Works on any plan", "One-time payment"]} />
+        </CardContent>
+        <CardFooter>{cta("pack_500", `Buy ${PACKS.pack_500.credits} credits`, "outline")}</CardFooter>
       </Card>
     </div>
   );

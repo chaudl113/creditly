@@ -1,27 +1,34 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/session";
-import { ButtonLink, Logo } from "./ui";
+import { Logo } from "./logo";
+import { ModeToggle } from "./mode-toggle";
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
   return (
-    <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
         <Logo />
-        <nav className="flex items-center gap-1 text-sm sm:gap-3">
-          <Link href="/pricing" className="rounded-md px-2 py-1 text-slate-600 hover:text-slate-900">
-            Pricing
-          </Link>
+        <nav className="flex items-center gap-1">
+          <Button variant="ghost" asChild>
+            <Link href="/pricing">Pricing</Link>
+          </Button>
           {user ? (
-            <ButtonLink href="/app">Open app</ButtonLink>
+            <Button asChild>
+              <Link href="/app">Open app</Link>
+            </Button>
           ) : (
             <>
-              <Link href="/login" className="rounded-md px-2 py-1 text-slate-600 hover:text-slate-900">
-                Log in
-              </Link>
-              <ButtonLink href="/signup">Start free</ButtonLink>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/signup">Start free</Link>
+              </Button>
             </>
           )}
+          <ModeToggle />
         </nav>
       </div>
     </header>

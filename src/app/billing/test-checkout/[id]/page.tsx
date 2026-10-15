@@ -1,7 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { getDb } from "@/db";
 import { checkoutSessions } from "@/db/schema";
 import { requireUser } from "@/lib/auth/session";
@@ -24,42 +28,54 @@ export default async function TestCheckoutPage({ params }: PageProps<"/billing/t
   return (
     <div className="grid gap-8 md:grid-cols-2">
       <div className="space-y-2">
-        <p className="text-sm text-slate-500">Pay Creditly</p>
-        <p className="text-4xl font-bold">
+        <p className="text-sm text-muted-foreground">Pay Creditly</p>
+        <p className="text-4xl font-semibold">
           {formatUsd(session.amountCents)}
-          {isSub && <span className="text-lg font-medium text-slate-500"> per month</span>}
+          {isSub && <span className="text-lg font-normal text-muted-foreground"> per month</span>}
         </p>
-        <p className="text-slate-700">{item}</p>
-        <p className="pt-4 text-xs text-slate-500">
+        <p>{item}</p>
+        <p className="pt-4 text-xs text-muted-foreground">
           Session <code className="font-mono">{session.id}</code> was created through the Stripe API (stripe-mock).
         </p>
       </div>
-      <Card className="space-y-4">
-        {session.status === "completed" ? (
-          <p className="text-sm">This checkout is already paid. <Link className="text-brand-600" href="/app/billing">Back to billing</Link></p>
-        ) : (
-          <form action={payTestCheckoutAction} className="space-y-4">
-            <input type="hidden" name="id" value={session.id} />
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700">Email</span>
-              <input disabled value={user.email} className="block w-full rounded-lg bg-slate-50 px-3 py-2 text-sm ring-1 ring-slate-200" />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700">Card information (test card)</span>
-              <input disabled value="4242 4242 4242 4242   12/34   123" className="block w-full rounded-lg bg-slate-50 px-3 py-2 font-mono text-sm ring-1 ring-slate-200" />
-            </label>
-            <label className="flex items-start gap-2 text-sm text-slate-600">
-              <input type="checkbox" name="flaky" className="mt-1" />
-              <span>Simulate a flaky network: deliver webhooks out of order and twice</span>
-            </label>
-            <Button type="submit" className="w-full" data-testid="pay-test-checkout">
-              {isSub ? "Subscribe" : "Pay"} {formatUsd(session.amountCents)}
-            </Button>
-            <Link href="/app/billing?checkout=cancelled" className="block text-center text-sm text-slate-500 hover:text-slate-700">
-              Cancel and go back
-            </Link>
-          </form>
-        )}
+      <Card>
+        <CardContent>
+          {session.status === "completed" ? (
+            <p className="text-sm">
+              This checkout is already paid.{" "}
+              <Link className="text-primary underline-offset-4 hover:underline" href="/app/billing">
+                Back to billing
+              </Link>
+            </p>
+          ) : (
+            <form action={payTestCheckoutAction}>
+              <input type="hidden" name="id" value={session.id} />
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="tc-email">Email</FieldLabel>
+                  <Input id="tc-email" disabled value={user.email} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="tc-card">Card information (test card)</FieldLabel>
+                  <Input id="tc-card" disabled value="4242 4242 4242 4242   12/34   123" className="font-mono" />
+                </Field>
+                <Field orientation="horizontal">
+                  <Checkbox id="tc-flaky" name="flaky" />
+                  <FieldContent>
+                    <FieldLabel htmlFor="tc-flaky">Simulate a flaky network</FieldLabel>
+                    <FieldDescription>Deliver the webhooks out of order and twice.</FieldDescription>
+                  </FieldContent>
+                </Field>
+                <Button type="submit" size="lg" className="w-full" data-testid="pay-test-checkout">
+                  {isSub ? "Subscribe" : "Pay"} {formatUsd(session.amountCents)}
+                </Button>
+                <Button asChild variant="ghost" className="w-full">
+                  <Link href="/app/billing?checkout=cancelled">Cancel and go back</Link>
+                </Button>
+              </FieldGroup>
+            </form>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

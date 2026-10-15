@@ -1,6 +1,13 @@
-import { Alert, Badge, Button, Card } from "@/components/ui";
+import { ExternalLinkIcon } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { PricingCards } from "@/components/pricing-cards";
+import { StatCard } from "@/components/stat-card";
 import { formatDate } from "@/components/statement";
+import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth/session";
 import { LIVE_SUBSCRIPTION_STATUSES } from "@/lib/billing/checkout";
@@ -26,76 +33,80 @@ export default async function BillingPage({ searchParams }: PageProps<"/app/bill
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Billing & credits</h1>
-      {checkout === "success" && <Alert tone="success">Payment received. Your credits are ready.</Alert>}
-      {checkout === "cancelled" && <Alert tone="info">Checkout cancelled. You were not charged.</Alert>}
-      {typeof error === "string" && <Alert tone="error">{error}</Alert>}
+      {checkout === "success" && <Notice tone="success">Payment received. Your credits are ready.</Notice>}
+      {checkout === "cancelled" && <Notice tone="info">Checkout cancelled. You were not charged.</Notice>}
+      {typeof error === "string" && <Notice tone="error">{error}</Notice>}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <p className="text-sm text-slate-500">Credit balance</p>
-          <p className="mt-1 text-4xl font-bold tracking-tight" data-testid="credit-balance">
-            {balance.toLocaleString("en-US")}
-          </p>
-        </Card>
-        <Card className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">Plan</p>
-            {sub && <Badge tone={live ? "green" : "slate"}>{sub.status}</Badge>}
-          </div>
-          <p className="text-2xl font-semibold" data-testid="current-plan">{live ? "Pro" : "Free"}</p>
-          {live && sub?.currentPeriodEnd && (
-            <p className="text-sm text-slate-600">
-              {sub.cancelAtPeriodEnd ? "Ends" : "Renews"} on {formatDate(sub.currentPeriodEnd)}
-            </p>
-          )}
-          {user.stripeCustomerId && (
-            <form action={openPortalAction}>
-              <Button variant="secondary" type="submit">
-                Manage billing{isStripeMock() ? " (test portal)" : ""}
-              </Button>
-            </form>
-          )}
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <StatCard label="Credit balance" value={balance.toLocaleString("en-US")} testId="credit-balance" />
+        <StatCard
+          label="Plan"
+          value={<span data-testid="current-plan">{live ? "Pro" : "Free"}</span>}
+          action={sub && <StatusBadge status={sub.status} />}
+          footer={
+            (live || user.stripeCustomerId) && (
+              <div className="flex w-full flex-wrap items-center justify-between gap-2">
+                <span>
+                  {live && sub?.currentPeriodEnd
+                    ? `${sub.cancelAtPeriodEnd ? "Ends" : "Renews"} on ${formatDate(sub.currentPeriodEnd)}`
+                    : ""}
+                </span>
+                {user.stripeCustomerId && (
+                  <form action={openPortalAction}>
+                    <Button variant="outline" size="sm" type="submit">
+                      Manage billing{isStripeMock() ? " (test portal)" : ""} <ExternalLinkIcon />
+                    </Button>
+                  </form>
+                )}
+              </div>
+            )
+          }
+        />
       </div>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">Plans & top-ups</h2>
+        <h2 className="text-lg font-semibold">Plans & top-ups</h2>
         <PricingCards signedIn currentPlan={live ? "pro" : "free"} />
       </section>
 
       <Card>
-        <h2 className="mb-4 font-semibold">Payment history</h2>
-        {history.length === 0 ? (
-          <p className="text-sm text-slate-500">No payments yet.</p>
-        ) : (
-          <div className="-mx-6 overflow-x-auto">
-            <table className="w-full min-w-[480px] text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-6 py-2 font-medium">Date</th>
-                  <th className="px-2 py-2 font-medium">Item</th>
-                  <th className="px-2 py-2 font-medium">Credits</th>
-                  <th className="px-6 py-2 text-right font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+        <CardHeader>
+          <CardTitle>Payment history</CardTitle>
+          <CardDescription>Refunds reclaim the unused credits that the payment granted.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {history.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No payments yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Credits</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {history.map((p) => (
-                  <tr key={p.id}>
-                    <td className="px-6 py-2 text-slate-500">{formatDate(p.paidAt)}</td>
-                    <td className="px-2 py-2">{p.kind === "subscription" ? "Pro subscription" : "500 credit pack"}</td>
-                    <td className="px-2 py-2">+{p.creditsGranted}</td>
-                    <td className="px-6 py-2 text-right">
-                      {formatUsd(p.amountCents)}
+                  <TableRow key={p.id}>
+                    <TableCell className="text-muted-foreground">{formatDate(p.paidAt)}</TableCell>
+                    <TableCell>{p.kind === "subscription" ? "Pro subscription" : "500 credit pack"}</TableCell>
+                    <TableCell className="tabular-nums">+{p.creditsGranted}</TableCell>
+                    <TableCell className="text-right tabular-nums">
                       {p.refundedCents > 0 && (
-                        <span className="ml-2"><Badge tone="rose">refunded {formatUsd(p.refundedCents)}</Badge></span>
+                        <Badge variant="destructive" className="mr-2">
+                          refunded {formatUsd(p.refundedCents)}
+                        </Badge>
                       )}
-                    </td>
-                  </tr>
+                      {formatUsd(p.amountCents)}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
     </div>
   );
