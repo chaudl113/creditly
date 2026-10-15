@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test --project=e2e",
     "screenshots": "playwright test --project=screenshots",
-    "e2e:demo": "playwright test --project=demo"
+    "e2e:demo": "playwright test --project=demo",
+    "demo:reset": "node --env-file-if-exists=.env --import tsx scripts/demo-reset.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",

@@ -9,7 +9,7 @@ const entries = process.argv.slice(2);
 
 await build({
   absWorkingDir: root,
-  entryPoints: entries.length ? entries : ["scripts/migrate.mts", "scripts/seed.mts"],
+  entryPoints: entries.length ? entries : ["scripts/migrate.mts", "scripts/seed.mts", "scripts/demo-reset.mts"],
   outdir: "dist/scripts",
   outExtension: { ".js": ".mjs" },
   bundle: true,
