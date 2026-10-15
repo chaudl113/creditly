@@ -49,7 +49,9 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:-docker-demo-secret-change-me-0123456789abcdef}
       AUTH_TRUST_HOST: "true"
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_123}
-      STRIPE_API_BASE: ${STRIPE_API_BASE:-http://stripe-mock:12111}
+      # Points at the stripe-mock container. To use a real Stripe test account,
+      # set COMPOSE_STRIPE_API_BASE= (empty) plus STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET.
+      STRIPE_API_BASE: ${COMPOSE_STRIPE_API_BASE-http://stripe-mock:12111}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_local_demo_secret}
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
