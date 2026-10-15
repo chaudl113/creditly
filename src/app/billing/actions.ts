@@ -26,8 +26,12 @@ async function guard() {
   return user;
 }
 
+// Behind a CDN the public URL would loop out and back in; on a server set
+// SIMULATOR_WEBHOOK_URL to the app's own address (e.g. http://127.0.0.1:3101/...).
+const webhookEndpoint = () => process.env.SIMULATOR_WEBHOOK_URL || `${appUrl()}/api/stripe/webhook`;
+
 const sendSigned = (events: Parameters<typeof deliver>[0]) =>
-  deliver(events, { endpoint: `${appUrl()}/api/stripe/webhook`, secret: webhookSecret() });
+  deliver(events, { endpoint: webhookEndpoint(), secret: webhookSecret() });
 
 export async function payTestCheckoutAction(form: FormData) {
   const user = await guard();

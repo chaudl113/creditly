@@ -12,6 +12,7 @@ import { defaultProvider, recentJobs } from "@/lib/ai/jobs";
 import { MAX_INPUT_CHARS } from "@/lib/ai/pricing";
 import type { Summary } from "@/lib/ai/types";
 import { requireUser } from "@/lib/auth/session";
+import { isDemoPublic } from "@/lib/demo";
 import { getUserBalance } from "@/lib/ledger";
 import { SummarizeForm } from "./summarize-form";
 
@@ -127,7 +128,7 @@ export default async function SummarizePage({ searchParams }: PageProps<"/app/su
       )}
       <Card>
         <CardContent>
-          <SummarizeForm maxChars={MAX_INPUT_CHARS} demo={demo} />
+          <SummarizeForm maxChars={MAX_INPUT_CHARS} demo={demo} urlDisabled={isDemoPublic()} />
         </CardContent>
       </Card>
       {job && <JobResult job={job} />}

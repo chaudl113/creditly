@@ -3,6 +3,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import type { Db, DbOrTx } from "@/db";
 import { passwordResetTokens, users, type User } from "@/db/schema";
 import { grantSignupCredits } from "./credits";
+import { isProtectedDemoAccount } from "./demo";
 import { AppError } from "./errors";
 import { ensureUserAccount } from "./ledger";
 import { hashPassword } from "./auth/password";
@@ -52,7 +53,8 @@ export async function requestPasswordReset(
   now = new Date(),
 ): Promise<string | null> {
   const user = await findUserByEmail(db, email);
-  if (!user) return null;
+  // Shared demo accounts keep their password; same silent answer as "no such user".
+  if (!user || isProtectedDemoAccount(user.email)) return null;
   const token = randomBytes(32).toString("base64url");
   await db.insert(passwordResetTokens).values({
     userId: user.id,
@@ -88,6 +90,11 @@ export async function resetPassword(
       )
       .returning();
     if (!claimed) throw new AppError("INVALID_TOKEN", "This reset link is invalid or has expired.");
+    const [user] = await tx.select({ email: users.email }).from(users).where(eq(users.id, claimed.userId));
+    // Covers tokens issued before demo mode was switched on.
+    if (isProtectedDemoAccount(user.email)) {
+      throw new AppError("FORBIDDEN", "The shared demo accounts' passwords cannot be changed.");
+    }
     await tx
       .update(users)
       .set({ passwordHash, passwordChangedAt: now })

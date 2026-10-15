@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import type { DbOrTx } from "@/db";
 import { aiJobs, auditLog, stripeEvents, subscriptions, users } from "@/db/schema";
 import { LIVE_SUBSCRIPTION_STATUSES } from "@/lib/billing/checkout";
+import { displayEmail } from "@/lib/demo";
 import { trialBalance } from "@/lib/ledger";
 
 const DAY = 86_400_000;
@@ -101,7 +102,7 @@ export async function listUsers(db: DbOrTx) {
     SELECT s.plan_key FROM subscriptions s
     WHERE s.user_id = "users"."id" AND s.status IN ${LIVE_SUBSCRIPTION_STATUSES}
     LIMIT 1)`;
-  return db
+  const rows = await db
     .select({
       id: users.id,
       email: users.email,
@@ -114,6 +115,7 @@ export async function listUsers(db: DbOrTx) {
     })
     .from(users)
     .orderBy(desc(users.createdAt));
+  return rows.map((r) => ({ ...r, email: displayEmail(r.email) }));
 }
 
 export async function webhookEvents(db: DbOrTx, status?: string, limit = 100) {
@@ -141,7 +143,7 @@ export async function webhookEvents(db: DbOrTx, status?: string, limit = 100) {
 export async function auditEntries(db: DbOrTx, opts: { targetUserId?: string; limit?: number } = {}) {
   const actor = alias(users, "actor");
   const target = alias(users, "target");
-  return db
+  const rows = await db
     .select({
       id: auditLog.id,
       action: auditLog.action,
@@ -159,4 +161,9 @@ export async function auditEntries(db: DbOrTx, opts: { targetUserId?: string; li
     .where(opts.targetUserId ? and(eq(auditLog.targetUserId, opts.targetUserId)) : undefined)
     .orderBy(desc(auditLog.createdAt))
     .limit(opts.limit ?? 100);
+  return rows.map((r) => ({
+    ...r,
+    actorEmail: displayEmail(r.actorEmail),
+    targetEmail: r.targetEmail && displayEmail(r.targetEmail),
+  }));
 }

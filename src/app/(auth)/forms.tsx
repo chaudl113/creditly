@@ -3,6 +3,7 @@
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useActionState, type ComponentProps, type ReactNode } from "react";
+import { DemoLoginButtons } from "@/components/demo-login";
 import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,9 +68,10 @@ function Submit({ pending, label, pendingLabel }: { pending: boolean; label: str
 
 const linkClass = "font-medium text-primary underline-offset-4 hover:underline";
 
-export function LoginForm({ next, notice, googleEnabled, googleAction }: {
+export function LoginForm({ next, notice, demo, googleEnabled, googleAction }: {
   next?: string;
   notice?: string;
+  demo: boolean;
   googleEnabled: boolean;
   googleAction: () => Promise<void>;
 }) {
@@ -81,6 +83,15 @@ export function LoginForm({ next, notice, googleEnabled, googleAction }: {
       footer={<span>New here? <Link href="/signup" className={linkClass}>Create an account</Link></span>}
     >
       {notice && <Notice tone="success">{notice}</Notice>}
+      {demo && (
+        <>
+          <DemoLoginButtons />
+          <p className="text-center text-xs text-muted-foreground">
+            Shared demo accounts, no password needed. Data resets every night.
+          </p>
+          <FieldSeparator>or log in with your own account</FieldSeparator>
+        </>
+      )}
       <Status state={state} />
       <form action={action}>
         <input type="hidden" name="next" value={next ?? ""} />
@@ -110,7 +121,7 @@ export function LoginForm({ next, notice, googleEnabled, googleAction }: {
   );
 }
 
-export function SignupForm() {
+export function SignupForm({ demo }: { demo: boolean }) {
   const [state, action, pending] = useActionState(signupAction, undefined);
   return (
     <Shell
@@ -118,6 +129,11 @@ export function SignupForm() {
       description="The Free plan includes 50 credits. No card required."
       footer={<span>Already have an account? <Link href="/login" className={linkClass}>Log in</Link></span>}
     >
+      {demo && (
+        <Notice tone="info">
+          Public demo: anyone can open the admin area and see accounts and activity, and all data is wiped nightly. Use a made-up email.
+        </Notice>
+      )}
       <Status state={state} />
       <form action={action}>
         <FieldGroup>

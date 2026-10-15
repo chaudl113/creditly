@@ -25,6 +25,7 @@ export default defineConfig({
   projects: [
     { name: "e2e", testMatch: /journey\.spec\.ts/ },
     { name: "screenshots", testMatch: /screenshots\.spec\.ts/ },
+    { name: "demo", testMatch: /demo\.spec\.ts/ },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

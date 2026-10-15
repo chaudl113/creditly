@@ -259,6 +259,13 @@ export const auditLog = pgTable(
   ],
 );
 
+/** Fixed-window counters for per-IP limits on auth endpoints (public demo mode). */
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type AuditEntry = typeof auditLog.$inferSelect;
 export type AiJob = typeof aiJobs.$inferSelect;
@@ -266,3 +273,4 @@ export type Subscription = typeof subscriptions.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type LedgerTxType = (typeof ledgerTxTypeEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
+

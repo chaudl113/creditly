@@ -19,7 +19,7 @@ Subscription revenue made up $41.7 million, while services contributed $6.5 mill
 its first quarter. Northwind raised its full-year revenue guidance to between $186 million and $190 million and expects \
 to open an office in Singapore in March 2027. Headcount rose to 640 employees.`;
 
-export function SummarizeForm({ maxChars, demo }: { maxChars: number; demo: boolean }) {
+export function SummarizeForm({ maxChars, demo, urlDisabled }: { maxChars: number; demo: boolean; urlDisabled: boolean }) {
   const [state, action, pending] = useActionState(summarizeAction, undefined);
   const [kind, setKind] = useState<"text" | "url">("text");
   const [text, setText] = useState("");
@@ -73,6 +73,15 @@ export function SummarizeForm({ maxChars, demo }: { maxChars: number; demo: bool
             </Field>
           </TabsContent>
           <TabsContent value="url" className="pt-2">
+            {urlDisabled ? (
+              <Notice tone="info">
+                <span data-testid="url-disabled">
+                  URL summaries are turned off in this public demo. The server shares a host with private services,
+                  so it does not fetch addresses typed by visitors (SSRF). Paste the text instead; the URL path and
+                  its private-address blocking are covered by the test suite.
+                </span>
+              </Notice>
+            ) : (
             <Field>
               <FieldLabel htmlFor="sum-url">Public web page</FieldLabel>
               <Input id="sum-url" name="url" type="url" placeholder="https://example.com/article" />
@@ -80,10 +89,11 @@ export function SummarizeForm({ maxChars, demo }: { maxChars: number; demo: bool
                 Only public http(s) pages are fetched; private network addresses are blocked. Long pages are truncated.
               </FieldDescription>
             </Field>
+            )}
           </TabsContent>
         </Tabs>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" disabled={pending} data-testid="summarize-submit">
+          <Button type="submit" size="lg" disabled={pending || (urlDisabled && kind === "url")} data-testid="summarize-submit">
             {pending ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
             {pending ? "Summarizing…" : "Summarize"}
           </Button>

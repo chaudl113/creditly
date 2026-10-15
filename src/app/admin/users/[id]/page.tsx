@@ -17,6 +17,7 @@ import { requireAdminPage } from "@/lib/auth/session";
 import { formatUsd } from "@/lib/billing/catalog";
 import { LIVE_SUBSCRIPTION_STATUSES } from "@/lib/billing/checkout";
 import { latestSubscription, paymentsWithRefunds } from "@/lib/billing/queries";
+import { displayEmail } from "@/lib/demo";
 import { getUserBalance, userStatement } from "@/lib/ledger";
 import { findUserById } from "@/lib/users";
 import { AdjustCreditsDialog, RefundDialog } from "../../admin-forms";
@@ -46,14 +47,14 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
       </Button>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{user.name}</h1>
-        <span className="text-muted-foreground">{user.email}</span>
+        <span className="text-muted-foreground">{displayEmail(user.email)}</span>
         {user.role === "admin" && <Badge variant="outline">admin</Badge>}
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           label="Credit balance"
           value={<span data-testid="admin-user-balance">{balance.toLocaleString("en-US")}</span>}
-          action={<AdjustCreditsDialog userId={user.id} email={user.email} />}
+          action={<AdjustCreditsDialog userId={user.id} email={displayEmail(user.email)} />}
         />
         <StatCard
           label="Plan"

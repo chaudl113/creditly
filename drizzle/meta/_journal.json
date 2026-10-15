@@ -43,6 +43,13 @@
       "when": 1792034674962,
       "tag": "0005_admin_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792038391949,
+      "tag": "0006_rate_limits",
+      "breakpoints": true
     }
   ]
 }

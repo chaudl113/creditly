@@ -2,6 +2,7 @@ import { and, count, desc, eq, gt, lt } from "drizzle-orm";
 import type { Db } from "@/db";
 import { aiJobs, type AiJob } from "@/db/schema";
 import { holdCredits, releaseHold, settleHold } from "@/lib/credits";
+import { isDemoPublic } from "@/lib/demo";
 import { AppError } from "@/lib/errors";
 import { lockUserAccounts, userAccountCode } from "@/lib/ledger";
 import { AnthropicProvider } from "./anthropic";
@@ -32,6 +33,10 @@ export async function runSummarize(
   provider: SummaryProvider = defaultProvider(),
   now = new Date(),
 ): Promise<AiJob> {
+  if (input.kind === "url" && isDemoPublic()) {
+    // The public demo host also runs private services; no server-side fetching there.
+    throw new AppError("FORBIDDEN", "URL summaries are turned off in the public demo. Paste the text instead.");
+  }
   if (input.kind === "text" && input.text.trim().length < 40) {
     throw new AppError("VALIDATION", "Paste at least a few sentences (40+ characters).");
   }
