@@ -6,6 +6,7 @@ import type { NextConfig } from "next";
 // image also applies migrations and seeds (drizzle + tsx), so no standalone output.
 const nextConfig: NextConfig = {
   cacheComponents: false,
+  devIndicators: false,
   serverExternalPackages: ["postgres"],
   turbopack: {
     rules: {
