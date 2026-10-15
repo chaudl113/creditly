@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   bigserial,
+  boolean,
   check,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -107,6 +109,102 @@ export const ledgerEntries = pgTable(
   ],
 );
 
+// ---------------------------------------------------------------------------
+// Billing (Stripe). Stripe is the source of truth for money; these tables are
+// the app's projection of it, built only from verified webhook events.
+// ---------------------------------------------------------------------------
+
+export const checkoutKindEnum = pgEnum("checkout_kind", ["subscription", "credit_pack"]);
+
+export const checkoutSessions = pgTable("checkout_sessions", {
+  id: text("id").primaryKey(), // Stripe cs_...
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
+  kind: checkoutKindEnum("kind").notNull(),
+  productKey: text("product_key").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  status: text("status", { enum: ["open", "completed"] }).notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(), // Stripe sub_...
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    planKey: text("plan_key").notNull(),
+    status: text("status").notNull(), // Stripe status: active, past_due, canceled, ...
+    priceCents: integer("price_cents").notNull(),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+    // `created` of the newest Stripe event applied. Older events are ignored,
+    // which makes subscription state immune to out-of-order delivery.
+    stripeEventAt: timestamp("stripe_event_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("subscriptions_user_idx").on(t.userId)],
+);
+
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    stripeRef: text("stripe_ref").notNull().unique(), // invoice in_... or checkout cs_...
+    paymentIntentId: text("payment_intent_id").unique(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: checkoutKindEnum("kind").notNull(),
+    productKey: text("product_key").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull(),
+    creditsGranted: integer("credits_granted").notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("payments_user_idx").on(t.userId), index("payments_paid_at_idx").on(t.paidAt)],
+);
+
+export const refunds = pgTable(
+  "refunds",
+  {
+    id: text("id").primaryKey(), // Stripe re_..., or charge:<ch>:<cumulative> from charge.refunded
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => payments.id),
+    amountCents: integer("amount_cents").notNull(),
+    creditsReclaimed: integer("credits_reclaimed").notNull(),
+    reason: text("reason").notNull(),
+    actorId: uuid("actor_id").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("refunds_amount_positive", sql`${t.amountCents} > 0`)],
+);
+
+export const stripeEvents = pgTable(
+  "stripe_events",
+  {
+    id: text("id").primaryKey(), // evt_... — the idempotency key for webhooks
+    type: text("type").notNull(),
+    stripeCreatedAt: timestamp("stripe_created_at", { withTimezone: true }).notNull(),
+    payload: jsonb("payload").notNull(),
+    status: text("status", { enum: ["pending", "processed", "ignored", "failed"] }).notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    deliveries: integer("deliveries").notNull().default(1),
+    note: text("note"),
+    lastError: text("last_error"),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [index("stripe_events_received_idx").on(t.receivedAt)],
+);
+
 export type User = typeof users.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
 export type LedgerTxType = (typeof ledgerTxTypeEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
