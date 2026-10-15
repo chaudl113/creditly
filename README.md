@@ -7,7 +7,11 @@ billed per token, and an admin dashboard for revenue, refunds and audit.
 > Portfolio project. Stripe runs in **test mode only** (against `stripe/stripe-mock`
 > by default); seeded users are labelled **Demo data**.
 
-![Admin overview](docs/screenshots/admin-overview-desktop.png)
+![Landing page](docs/screenshots/landing-desktop.png)
+
+| | |
+| --- | --- |
+| ![Admin overview](docs/screenshots/admin-overview-desktop.png) | ![Summarize](docs/screenshots/summarize-desktop.png) |
 
 ## What to look at
 
@@ -27,7 +31,7 @@ billed per token, and an admin dashboard for revenue, refunds and audit.
 3. **Reserve → run → settle for AI usage.** Credits are held under the wallet lock
    together with the rate-limit check, the provider runs outside any transaction,
    and every job is closed exactly once: settled for actual tokens or released in
-   full on any error — [`src/lib/ai/jobs.ts:28`](src/lib/ai/jobs.ts). The Anthropic
+   full on any error — [`src/lib/ai/jobs.ts:29`](src/lib/ai/jobs.ts). The Anthropic
    provider uses structured outputs and server-side refusal fallbacks
    ([`src/lib/ai/anthropic.ts`](src/lib/ai/anthropic.ts)); URL fetching blocks
    private addresses ([`src/lib/ai/fetch-url.ts`](src/lib/ai/fetch-url.ts)).
@@ -76,8 +80,17 @@ npm run dev                      # http://localhost:3101
 ```bash
 npm test               # Vitest against Postgres (creates/migrates creditly_test)
 npm run e2e            # Playwright journey against :3101
-npm run screenshots    # regenerates docs/screenshots (desktop 1440 / mobile 390)
+npm run e2e:demo       # public-demo checks; needs a server with DEMO_PUBLIC=1
+npm run screenshots    # regenerates docs/screenshots and public/landing
 ```
+
+### Public demo mode
+
+`DEMO_PUBLIC=1` makes the app safe to leave open on the internet: one-click
+"Try as customer / admin" sign-in, no server-side URL fetching, frozen demo
+credentials, per-IP auth rate limits, no reset emails, visitor emails masked
+in the admin area. `npm run demo:reset` wipes visitor data and re-seeds.
+Deployment (image, env, compose, cron): [`deploy/README.md`](deploy/README.md).
 
 ## Stack
 

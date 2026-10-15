@@ -32,6 +32,9 @@
 | Role read from DB on every request (JWT holds only user id + issue time) | Demotions and password resets take effect immediately | One extra query per request |
 | `cacheComponents` off | Every screen shows per-user money data | No static shell; pages are fully dynamic |
 | Test mode simulator for Checkout/Portal | stripe-mock has no hosted pages or webhooks | Simulated event payloads must track Stripe's shapes (pinned API version) |
+| Public demo: one-click sign-in is a second Credentials provider (`demo`), registered only when `DEMO_PUBLIC=1` | No shared password in the page or the client bundle; the button is an ordinary server action | Anyone can become the demo admin, by design; data resets nightly |
+| Auth rate limits as a fixed-window counter in Postgres (one upsert per hit) | Survives restarts and multiple instances without Redis | Fixed windows allow a burst at the boundary; good enough for auth throttling |
+| Demo reset truncates the tables declared in the Drizzle schema, without `CASCADE` | Cannot touch another app's tables on a shared Postgres | Not atomic with the re-seed (~1 s window with partial data) |
 
 ## Known limitations
 
@@ -44,3 +47,8 @@
   matched (it fails and is visible in the webhook log); the credit clawback then needs a
   manual adjustment.
 - Ledger timestamps are the time of posting, not the Stripe event time.
+- Public demo: the client IP comes from a header (`cf-connecting-ip`). If the
+  origin is reachable without Cloudflare, that header can be forged and the
+  per-IP limits bypassed; firewall the origin to Cloudflare's ranges.
+- Public demo: visitors share one admin account, so one visitor can refund or
+  adjust another visitor's demo data until the nightly reset.

@@ -1,0 +1,66 @@
+# Creditly public demo on a VPS, behind Cloudflare + Nginx Proxy Manager.
+#
+#   docker compose -f deploy/compose.vps.yml --env-file deploy/.env.vps up -d
+#
+# - No host ports: NPM reaches the app over the external `portfolio` network
+#   at http://creditly-app:3101.
+# - Postgres is not part of this file; DATABASE_URL points at the shared
+#   server. Give Creditly its own database (table names like `users` and the
+#   drizzle migrations table would clash with another app in the same one).
+# - stripe-mock sits on an internal-only network; only the app can reach it.
+# - No Mailpit: with SMTP_HOST unset mail is logged, and public demo mode
+#   sends none (password reset is disabled for everyone).
+# - Migrations and an idempotent seed run on every start (see Dockerfile).
+name: creditly
+
+services:
+  app:
+    image: ${CREDITLY_IMAGE:-creditly:latest}
+    restart: unless-stopped
+    depends_on:
+      - stripe-mock
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL (a database used only by Creditly)}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET (openssl rand -base64 32)}
+      APP_URL: ${PUBLIC_URL:-https://creditly.longtn.shop}
+      AUTH_URL: ${PUBLIC_URL:-https://creditly.longtn.shop}
+      AUTH_TRUST_HOST: "true"
+      DEMO_PUBLIC: "1"
+      # Cloudflare sets this; the per-IP auth limits key on it.
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-cf-connecting-ip}
+      STRIPE_SECRET_KEY: sk_test_123
+      STRIPE_API_BASE: http://stripe-mock:12111
+      # Signs the simulator's webhook events. Must be secret: anyone who knows
+      # it can post events that grant credits.
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?set STRIPE_WEBHOOK_SECRET (any long random string)}
+      # The simulator posts webhooks to the app itself, not out through Cloudflare.
+      SIMULATOR_WEBHOOK_URL: http://127.0.0.1:3101/api/stripe/webhook
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD}
+      # Leave empty to use the offline demo summarizer (no API spend).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    expose:
+      - "3101"
+    networks:
+      portfolio:
+        aliases: [creditly-app]
+      internal: {}
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    restart: unless-stopped
+    networks:
+      internal: {}
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
+
+networks:
+  portfolio:
+    external: true
+  internal:
+    internal: true

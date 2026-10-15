@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { buy, signUp } from "./helpers";
 
 /**
  * Public demo mode. Needs a server started with DEMO_PUBLIC=1:
@@ -24,12 +25,21 @@ test("one-click customer sign-in; URL summaries are off", async ({ page }) => {
   await expect(page.getByTestId("summarize-submit")).toBeDisabled();
 });
 
-test("one-click admin sign-in; visitor emails are masked", async ({ page }) => {
+test("visitor signs up and buys credits; admin sees the email masked", async ({ page, context }) => {
+  const email = `visitor-${Date.now()}@example.com`;
+  await signUp(page, "Visitor (e2e)", email);
+  // The checkout simulator delivers signed webhooks via SIMULATOR_WEBHOOK_URL when set.
+  await buy(page, "pack_500");
+  await expect(page.getByTestId("credit-balance")).toContainText("550");
+  await context.clearCookies();
+
+  await page.goto("/login");
   await page.getByTestId("demo-admin").click();
   await expect(page).toHaveURL(/\/admin$/);
   await page.goto("/admin/users");
-  // Accounts created by e2e runs and visitors show up masked.
-  await expect(page.getByText(/^\w\*\*\*@\w\*\*\*\./).first()).toBeVisible();
+  await page.getByPlaceholder(SEARCH).fill("Visitor (e2e)");
+  await expect(page.getByText(/^v\*\*\*@e\*\*\*\.com$/).first()).toBeVisible();
+  await expect(page.getByText(email)).toHaveCount(0);
   await page.getByPlaceholder(SEARCH).fill("ava@");
   await expect(page.getByText("ava@demo.creditly.test")).toBeVisible();
 });
