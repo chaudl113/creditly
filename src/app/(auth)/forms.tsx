@@ -85,7 +85,7 @@ export function LoginForm({ next, notice, googleEnabled, googleAction }: {
       <form action={action}>
         <input type="hidden" name="next" value={next ?? ""} />
         <FieldGroup>
-          <TextField label="Email" name="email" type="email" autoComplete="email" required />
+          <TextField label="Email" name="email" type="email" autoComplete="email" defaultValue={state?.values?.email} required />
           <Field>
             <div className="flex items-center justify-between">
               <FieldLabel htmlFor="field-password">Password</FieldLabel>
@@ -121,8 +121,8 @@ export function SignupForm() {
       <Status state={state} />
       <form action={action}>
         <FieldGroup>
-          <TextField label="Name" name="name" autoComplete="name" required />
-          <TextField label="Email" name="email" type="email" autoComplete="email" required />
+          <TextField label="Name" name="name" autoComplete="name" defaultValue={state?.values?.name} required />
+          <TextField label="Email" name="email" type="email" autoComplete="email" defaultValue={state?.values?.email} required />
           <TextField label="Password" name="password" type="password" autoComplete="new-password" minLength={8} hint="At least 8 characters." required />
           <Submit pending={pending} label="Create account" pendingLabel="Creating account…" />
         </FieldGroup>
@@ -142,7 +142,7 @@ export function ForgotPasswordForm() {
       <Status state={state} />
       <form action={action}>
         <FieldGroup>
-          <TextField label="Email" name="email" type="email" autoComplete="email" required />
+          <TextField label="Email" name="email" type="email" autoComplete="email" defaultValue={state?.values?.email} required />
           <Submit pending={pending} label="Send reset link" pendingLabel="Sending…" />
         </FieldGroup>
       </form>

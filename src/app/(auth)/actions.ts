@@ -9,7 +9,10 @@ import { AppError } from "@/lib/errors";
 import { appUrl } from "@/lib/env";
 import { createUser, requestPasswordReset, resetPassword } from "@/lib/users";
 
-export type FormState = { error?: string; ok?: string } | undefined;
+export type FormState = { error?: string; ok?: string; values?: { name?: string; email?: string } } | undefined;
+
+/** Non-secret fields echoed back on error, so React's post-action form reset keeps them. */
+const keep = (form: FormData) => ({ name: String(form.get("name") ?? ""), email: String(form.get("email") ?? "") });
 
 const signupSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80),
@@ -19,11 +22,11 @@ const signupSchema = z.object({
 
 export async function signupAction(_: FormState, form: FormData): Promise<FormState> {
   const parsed = signupSchema.safeParse(Object.fromEntries(form));
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) return { error: parsed.error.issues[0].message, values: keep(form) };
   try {
     await createUser(getDb(), parsed.data);
   } catch (e) {
-    if (e instanceof AppError) return { error: e.message };
+    if (e instanceof AppError) return { error: e.message, values: keep(form) };
     throw e;
   }
   await signIn("credentials", {
@@ -42,14 +45,14 @@ export async function loginAction(_: FormState, form: FormData): Promise<FormSta
       redirectTo: next.startsWith("/") && !next.startsWith("//") ? next : "/app",
     });
   } catch (e) {
-    if (e instanceof AuthError) return { error: "Wrong email or password." };
+    if (e instanceof AuthError) return { error: "Wrong email or password.", values: keep(form) };
     throw e; // includes Next's redirect signal
   }
 }
 
 export async function forgotPasswordAction(_: FormState, form: FormData): Promise<FormState> {
   const email = z.email().safeParse(form.get("email"));
-  if (!email.success) return { error: "Enter a valid email" };
+  if (!email.success) return { error: "Enter a valid email", values: keep(form) };
   await requestPasswordReset(getDb(), email.data, appUrl());
   return { ok: "If an account exists for that email, a reset link is on its way." };
 }

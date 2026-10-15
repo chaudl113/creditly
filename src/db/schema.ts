@@ -235,7 +235,32 @@ export const aiJobs = pgTable(
   (t) => [index("ai_jobs_user_created_idx").on(t.userId, t.createdAt), index("ai_jobs_status_idx").on(t.status)],
 );
 
+export const auditActionEnum = pgEnum("audit_action", ["credits.adjust", "payment.refund"]);
+
+/** Who did what, to whom, and why. Append-only, like the ledger. */
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => users.id),
+    action: auditActionEnum("action").notNull(),
+    targetUserId: uuid("target_user_id").references(() => users.id),
+    targetRef: text("target_ref"),
+    reason: text("reason").notNull(),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("audit_log_created_idx").on(t.createdAt),
+    index("audit_log_target_idx").on(t.targetUserId),
+    check("audit_log_reason_present", sql`length(trim(${t.reason})) >= 3`),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
+export type AuditEntry = typeof auditLog.$inferSelect;
 export type AiJob = typeof aiJobs.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
